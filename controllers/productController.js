@@ -35,28 +35,32 @@ exports.uploadProductPhoto = upload.single("photo");
 
 const createProduct = async (req, res, next) => {
   const { name, price, stock } = req.body;
-  const file = req.file;
-  let img;
+  const files = req.files;
+  let images = [];
 
   try {
-    if (file) {
-      // dapatkan extension file nya
-      const split = file.originalname.split(".");
-      const extension = split[split.length - 1];
+    if (files) {
+      await Promise.all(
+        files.map(async (file) => {
+          // dapatkan extension file nya
+          const split = file.originalname.split(".");
+          const extension = split[split.length - 1];
 
-      // upload file ke imagekit
-      const uploadedImage = await imagekit.upload({
-        file: file.buffer,
-        fileName: `IMG-${Date.now()}.${extension}`,
-      });
-      img = uploadedImage.url;
+          // upload file ke imagekit
+          const uploadedImage = await imagekit.upload({
+            file: file.buffer,
+            fileName: `IMG-${Date.now()}.${extension}`,
+          });
+          images.push(uploadedImage.url)
+        })
+      )
     }
 
     const newProduct = await Product.create({
       name,
       price,
       stock,
-      imageUrl: img,
+      imageUrl: images,
       userId: req.user.id,
       shopId: req.user.shopId,
     });
